@@ -209,12 +209,12 @@ class Element(models.Model):
         
         response*=not (name and not is_valid(self.name))
         response*=not (image and not is_valid(self.image))
-        response*=not (ordered and not is_valid(self.ordered))
+        response*=not (ordered and not (is_valid(self.ordered) or self.ordered==0))
         response*=not (type and not is_valid(self.type))
         response*=not (manufacturer and not is_valid(self.manufacturer))
         response*=not (analog and not is_valid(self.analog))
         response*=not (unit and not is_valid(self.unit))
-        response*=not (min and not is_valid(self.min))
+        response*=not (min and not is_valid(self.min_fact))
         response*=not (count and not is_valid(self.count))
         response*=not (price_in_rubles and not is_valid(self.price_in_rubles))
         return response
@@ -368,3 +368,5 @@ class Count_changings(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     datetime = models.DateTimeField()
     count_changing = models.FloatField()
+
+

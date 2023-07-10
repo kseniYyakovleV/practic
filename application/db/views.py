@@ -53,11 +53,11 @@ class get_all_items_data(generics.ListAPIView):
 def show_image(request):
     #Отправить изображение по полю "image" запроса GET
     image = request.GET["image"]
-    response = FileResponse(open(os.path.abspath("db/files/images/xl/media")+"/"+image, "rb"))
+    response = FileResponse(open(os.path.abspath("db/files/images")+"/"+image, "rb"))
     return response
 
 def empty_number():
-        images = os.listdir(os.path.abspath(r"db/files/images/xl/media"))
+        images = os.listdir(os.path.abspath(r"db/files/images"))
         number = 1
         for number in range(1, len(images)+1):
             if "image"+str(number)+".png" not in images and "image"+str(number)+".jpeg" not in images:
@@ -92,7 +92,7 @@ def add_data(request):
         else:
             response["status"] = "Wrong login or password"
         if end!='':
-            storage = FileSystemStorage(os.path.abspath(os.path.normpath(r"db/files/images/xl/media")))
+            storage = FileSystemStorage(os.path.abspath(os.path.normpath(r"db/files/images")))
             name = "image"+str(empty_number())+end
             filename = storage.save(name, file)
             new_element.image = filename
@@ -110,7 +110,7 @@ def get_excel(request):
     thin = Side(border_style = "thin", color = "000000")
     double_border = Border(left = double, right = double, top = double, bottom = double)
     thin_border = Border(left = thin, right = thin, top = thin, bottom = thin)
-    doc=openpyxl.load_workbook("second_example.xlsx")
+    doc=openpyxl.load_workbook(os.path.abspath("db/files/spreadsheets/template.xlsx"))
     sheets = doc.get_sheet_names()
     sheet = doc[sheets[0]]
     date = datetime.date.today()
@@ -134,7 +134,7 @@ def get_excel(request):
             sheet["B"+str(n+10)].border = thin_border
             
 
-            image = Image(os.path.abspath("images/xl/media")+"/"+image)
+            image = Image(os.path.abspath("db/files/images")+"/"+image)
             image.height = 150
             image.width = 150
             sheet.add_image(image, "C"+str(n+10))
@@ -258,8 +258,8 @@ def change_data(request):
                 element.using_in_workshop=request.POST["using_in_workshop"]
                 element.price_in_rubles=request.POST["price_in_rubles"]
                 if element.count!=request.POST["count"]:
-                    Count_changings.create(element, user, datetime=datetime.datetime.now(pytz.timezone("Europe/Moscow")), 
-                                        Count_changings = float(request.POST["count"])-element.count)
+                    Count_changings.objects.create(changed_element = element, user=user, datetime=datetime.datetime.now(pytz.timezone("Europe/Moscow")), 
+                                        count_changing = float(request.POST["count"])-element.count)
                     element.count=request.POST["count"]
                 element.ordered=request.POST["ordered"]
                 element.min_fact=request.POST["min_fact"]
@@ -275,21 +275,19 @@ def change_data(request):
                         response["status"] = "Wrong type of image"
                     if end!='':
                         image = element.image
-                        storage = FileSystemStorage(os.path.abspath(os.path.normpath(r"db/files/images/xl/media")))
+                        storage = FileSystemStorage(os.path.abspath(os.path.normpath(r"db/files/images")))
                         name = "image"+str(empty_number())+end
                         filename = storage.save(name, file)
                         element.image = filename
                         count_elements_with_this_image = Element.objects.filter(image=image).__len__()
                         if count_elements_with_this_image<=1:
-                            os.remove(os.path.abspath("db/files/images/xl/media")+"/"+image)
+                            os.remove(os.path.abspath("db/files/images")+"/"+image)
                 elif "image" in request.POST:
                     element.image = request.POST["image"]
                 
                 element.save()
             except Element.DoesNotExist:
                 response["status"] = "Wrong number"
-            except TypeError:
-                response["status"] = "Wrong types of arguments"
         except User.DoesNotExist:
             response["status"] = "Wrong login or password"
     else:
@@ -298,9 +296,9 @@ def change_data(request):
 
 
 
-def chainge_count(request):
+def change_count(request):
     response = HttpResponse()
-    response["status"] = "NOT OK"
+    response["status"] = "Count is not ehough"
     if request.method == "POST":
         try:
             user = User.objects.get(login = request.POST["login"], password = request.POST["password"])
@@ -308,8 +306,8 @@ def chainge_count(request):
                 element = Element.objects.get(number = request.POST["number"])
                 new_count = float(request.POST["new_count"])
                 old_count = element.count
-                Count_changings.create(element, user, datetime=datetime.datetime.now(pytz.timezone("Europe/Moscow")), 
-                                       Count_changings = old_count-new_count)
+                Count_changings.objects.create(changed_element=element, user=user, datetime=datetime.datetime.now(pytz.timezone("Europe/Moscow")), 
+                                       count_changing = old_count-new_count)
 
                 
                 element.save()
@@ -326,7 +324,7 @@ def chainge_count(request):
 
 
 def get_all_images(request):
-    images = os.listdir(os.path.abspath(r"db/files/images/xl/media"))
+    images = os.listdir(os.path.abspath(r"db/files/images"))
     response = HttpResponse()
     for image in images[:-1]:
         response.write(image+"|")

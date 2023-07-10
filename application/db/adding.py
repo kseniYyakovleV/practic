@@ -5,12 +5,13 @@ import os
 import shutil
 from db.models import Element
 from django.db.utils import IntegrityError
+from distutils.dir_util import copy_tree, remove_tree
 
-filename = "data.xlsx"
+filename = os.path.abspath("db/files/spreadsheets/data.xlsx")
 path_in_archive = "xl/drawings"
 dir_with_images = "xl/media"
 path_for_images_types = "xl/drawings/_rels/drawing1.xml.rels"
-dir_for_images = "images"
+dir_for_images = os.path.abspath("db/files/images")
 
 full_pattern = "\<xdr:twoCellAnchor\>.\</xdr:twoCellAnchor\>"
 
@@ -72,9 +73,9 @@ with open("errors.txt", "w") as error_file:
                     continue
                 try:
                         if row_index in all_images:
-                            picture = all_types_of_images[all_images[row_index]]
+                            image = all_types_of_images[all_images[row_index]]
                         else:
-                            picture = None
+                            image = None
                         Element.objects.create(
                             number = row[0].value,
                             manufacturer = row[1].value,
@@ -94,7 +95,8 @@ with open("errors.txt", "w") as error_file:
                             count = row[26].value,
                             min_fact = row[27].value,
                             max_fact = row[28].value,
-                            picture = picture)
+                            ordered = 0,
+                            image = image)
                         
                 except ValueError:
                     print(row_index, file=error_file)
@@ -104,3 +106,8 @@ with open("errors.txt", "w") as error_file:
                 except KeyError:
                     print(row_index, file=key_error_file)
                 row_index+=1
+
+
+
+copy_tree(os.path.abspath("db/files/images/xl/media"), os.path.abspath("db/files/images"))
+remove_tree(os.path.abspath("db/files/images/xl"))
